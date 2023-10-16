@@ -4,12 +4,9 @@ import logging
 import os
 import random
 from collections import OrderedDict
-from PIL import Image
 
 import torch
 from torch.utils.data import Dataset
-import torchvision
-from torchvision import transforms
 
 from utils import *
 
@@ -80,7 +77,7 @@ class FloorData(object):
 
         # Normalization
         self.example = example
-        self.gt = np.array(list(example.keys()))
+        self.gt = np.array(list(example.keys()))  # ground-truth
         self.feature = np.array(list(example.values()))
         self.feature_max = self.feature.max(axis=0, keepdims=True)
         self.feature_min = self.feature.min(axis=0, keepdims=True)
@@ -89,7 +86,7 @@ class FloorData(object):
         self.feature = (self.feature - self.feature_min) / (self.feature_max - self.feature_min)
         self.feature_length = self.feature.shape[1]
         self.output_length = self.gt.shape[1]
-        self.index = np.arange(self.feature.shape[0])
+        self.index = np.arange(self.feature.shape[0])  # number of row in this array, number of examples
         if self.shuffle:
             np.random.shuffle(self.index)
         self.train_ratio = 0.8
@@ -98,7 +95,7 @@ class FloorData(object):
         return len(self.index)
 
     def get_train(self):
-        idx = self.index[:int(len(self) * self.train_ratio)]
+        idx = self.index[:int(len(self) * self.train_ratio)]  # select the first 80% elements
         return self.feature[idx, ...], self.gt[idx, ...]
 
     def get_test(self):
@@ -181,13 +178,6 @@ class UrbanDataset(Dataset):
             return array
         self.feature = _map(self.feature)
         self.label = _map(self.label)
-        self.image = Image.open(ds.floor_plan_filename).convert('RGB')
-        self.trans = torchvision.transforms.Compose([
-            transforms.Resize((28, 28)),
-            transforms.ToTensor(),
-            transforms.Normalize(0.5, 0.5),
-        ])
-        self.img = self.trans(self.image)
         self.index = np.arange(len(self))
         if shuffle:
             np.random.shuffle(self.index)
@@ -195,23 +185,16 @@ class UrbanDataset(Dataset):
     def pin_memory(self):
         self.feature = self.feature.pin_memory()
         self.label = self.label.pin_memory()
-        self.img = self.img.pin_memory()
 
     def __len__(self):
         return self.feature.shape[0]
 
-    # def __getitem__(self, index):
-    #     idx = self.index[index]
-    #     return self.feature[idx, ...], self.label[idx, ...], self.img
-    #
     def __getitem__(self, index):
         idx = self.index[index]
         feature = self.feature[idx, ...]
-        img = self.img
         if True:
             feature += (1e-3 * torch.randn(feature.size()).float().to(feature.device))
-            img += (1e-3 * torch.randn(img.size()).float().to(img.device))
-        return feature, self.label[idx, ...], img
+        return feature, self.label[idx, ...]
 
     # def collate_fn(self, batch):
     #     examples = [ins[0] for ins in batch]

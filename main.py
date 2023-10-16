@@ -6,7 +6,7 @@ from torch.utils.data import DataLoader, RandomSampler
 from tqdm import tqdm
 
 from dataset import FloorData, UrbanDataset
-from network import MLP, MLP_without_CNN, VGG
+from network import VGG
 from utils import visualize_heatmap
 
 device = 'cuda' if torch.cuda.is_initialized() else 'cpu'
@@ -45,7 +45,7 @@ def train(network, train_dataset, test_dataset):
         loss_sum = 0.0
         count = 0
         for step, batch in enumerate(epoch_iterator):
-            example, label, image = map(lambda x: x.to(device), batch)
+            example, label = map(lambda x: x.to(device), batch)
             preds = network(example)
             optimizer.zero_grad()
             network.zero_grad()
@@ -67,7 +67,8 @@ def train(network, train_dataset, test_dataset):
         loss_sum = 0.0
         count = 0
         for step, batch in enumerate(test_iter):
-            example, label, image = map(lambda x: x.to(device), batch)
+            example, label = map(lambda x: x.to(device), batch)
+            preds = network(example)
             loss = criterion(preds, label)
 
             loss_sum += loss.detach().cpu().item()
@@ -104,7 +105,7 @@ def evaluate(network, test_dataset):
     for step, batch in enumerate(test_iter):
         # example, label = batch[0], batch[1]
         # preds = network(example)
-        example, label, image = map(lambda x: x.to(device), batch)
+        example, label = map(lambda x: x.to(device), batch)
         preds = network(example)
         loss = criterion(preds, label)
         labels[step] = label[0].detach().cpu().numpy()
@@ -141,7 +142,7 @@ def main():
 
     net = VGG(dataset.feature_length, 512, 4096, dataset.output_length)
     net = train(net, train_ds, test_ds)
-    # net.load_state_dict(torch.load('urban.49.0.032.pth', map_location=torch.device('cpu')))
+    # net.load_state_dict(torch.load('urban.49.0.024.pth', map_location=torch.device('cpu')))
     labels, losses = evaluate(net, all_ds)
     visualize(labels, losses, dataset)
 
