@@ -270,3 +270,5 @@ Temporary Items
 .apdisk
 
 output
+
+*.pth
